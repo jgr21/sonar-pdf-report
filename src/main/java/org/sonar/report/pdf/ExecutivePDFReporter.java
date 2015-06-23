@@ -156,10 +156,12 @@ public class ExecutivePDFReporter extends PDFReporter {
     printDashboard(project, section11);
     Section section12 = chapter1.addSection(new Paragraph(
         getTextProperty("general.violations_analysis"), Style.TITLE_FONT));
-    printMostViolatedRules(project, section12);
-    printMostViolatedFiles(project, section12);
+    
+    printViolationsByCategory(project, section12);
+    //printMostViolatedRules(project, section12);
+    //printMostViolatedFiles(project, section12);
     printMostComplexFiles(project, section12);
-    printMostDuplicatedFiles(project, section12);
+    //printMostDuplicatedFiles(project, section12);
     document.add(chapter1);
 
     Iterator<Project> it = project.getSubprojects().iterator();
@@ -280,11 +282,11 @@ public class ExecutivePDFReporter extends PDFReporter {
     codeCoverageTendency.getDefaultCell().setFixedHeight(
         Style.TENDENCY_ICONS_HEIGHT);
     codeCoverageTendency.addCell(new Phrase(project.getMeasure(
-        MetricKeys.COVERAGE).getFormatValue()
+        "overall_coverage").getFormatValue()
         + " coverage", Style.DASHBOARD_DATA_FONT));
     codeCoverageTendency.addCell(getTendencyImage(
-        project.getMeasure(MetricKeys.COVERAGE).getQualitativeTendency(),
-        project.getMeasure(MetricKeys.COVERAGE).getQuantitativeTendency()));
+        project.getMeasure("overall_coverage").getQualitativeTendency(),
+        project.getMeasure("overall_coverage").getQuantitativeTendency()));
     codeCoverage.addCell(codeCoverageTendency);
     codeCoverage.addCell(new Phrase(project.getMeasure(MetricKeys.TESTS)
         .getFormatValue() + " tests", Style.DASHBOARD_DATA_FONT_2));
@@ -387,6 +389,38 @@ public class ExecutivePDFReporter extends PDFReporter {
     section.add(codingRulesViolationsTable);
   }
 
+      protected void printViolationsByCategory(Project project, Section section) {
+    List<String> left = new LinkedList<String>();
+    List<String> right = new LinkedList<String>();
+
+    left.add("Blocking violations");
+    left.add("Critical violations");
+    left.add("Major violations");
+    left.add("Minor violations");
+    left.add("Info violations");
+
+    right.add(getMeasure(project, "blocker_violations"));
+    right.add(getMeasure(project, "critical_violations"));
+    right.add(getMeasure(project, "major_violations"));
+    right.add(getMeasure(project, "minor_violations"));
+    right.add(getMeasure(project, "info_violations"));
+
+    PdfPTable violationsByCategoryTable =
+      Style.createSimpleTable(left, right, "Violations by Category", "header2");
+    section.add(violationsByCategoryTable);
+  }
+
+  private String getMeasure(Project project, String measure){
+    String value = project.getMeasure(measure).getValue();
+    int len = value.length();
+    if(len>=2 && value.charAt(len-2) == '.'){
+      value = value.substring(0, len-2);
+    }
+    return value;
+  }
+
+      
+      
   protected void printMostDuplicatedFiles(final Project project, final Section section) {
     List<FileInfo> files = project.getMostDuplicatedFiles();
     Iterator<FileInfo> it = files.iterator();
